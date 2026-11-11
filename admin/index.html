@@ -1,457 +1,122 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Naia CMS</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --primary: #9b6a6d;
-      --bg: #faf6f3;
-      --surface: #ffffff;
-      --text: #4a3838;
-      --text-light: #8a7878;
-      --border: #e8ddd8;
-      --success: #6b9e6b;
-      --danger: #c97070;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .login-card {
-      background: var(--surface);
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      width: 360px;
-      max-width: 90vw;
-    }
-    .login-card h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-      color: var(--primary);
-    }
-    .login-card p {
-      color: var(--text-light);
-      margin-bottom: 24px;
-      font-size: 14px;
-    }
-    input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      outline: none;
-      margin-bottom: 12px;
-    }
-    input:focus { border-color: var(--primary); }
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    .btn:hover { opacity: 0.88; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-sm { padding: 6px 14px; font-size: 13px; }
-    .header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header h1 { font-size: 20px; color: var(--primary); }
-    .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
-    .page-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 24px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    .page-card:hover {
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      border-color: var(--primary);
-    }
-    .page-card-name { font-weight: 500; }
-    .page-card-path { font-size: 13px; color: var(--text-light); }
-    .page-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; }
-    .badge-edited { background: #e8f5e9; color: #2e7d32; }
-    .badge-original { background: #f5f0ed; color: #8a7878; }
-    .editor-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .toolbar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 8px 24px;
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-    .tool-btn {
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface);
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .tool-btn:hover { background: var(--bg); }
-    .editor-frame-wrapper {
-      width: 100%;
-      height: calc(100vh - 160px);
-      overflow: hidden;
-    }
-    #editor-iframe { width: 100%; height: 100%; border: none; background: white; }
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-    .modal-overlay.show { display: flex; }
-    .modal {
-      background: var(--surface);
-      border-radius: 10px;
-      padding: 24px;
-      width: 600px;
-      max-width: 90vw;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .image-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
-      margin: 16px 0;
-    }
-    .image-thumb {
-      position: relative;
-      cursor: pointer;
-      border: 2px solid transparent;
-      border-radius: 8px;
-      overflow: hidden;
-      aspect-ratio: 1;
-    }
-    .image-thumb:hover { border-color: var(--primary); }
-    .image-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .image-thumb .delete-btn {
-      position: absolute;
-      top: 4px; right: 4px;
-      background: rgba(201,112,112,0.9);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px; height: 24px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .upload-area {
-      border: 2px dashed var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      margin-bottom: 16px;
-    }
-    .upload-area input { display: none; }
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--text);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-    .toast.show { opacity: 1; }
-    .toast.error { background: var(--danger); }
-    .toast.success { background: var(--success); }
-    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
-    .loading { text-align: center; padding: 40px; color: var(--text-light); }
-    .spinner {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Naia CMS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:sans-serif;background:#faf6f3;color:#4a3838;padding:20px}
+.c{background:#fff;padding:30px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:900px;margin:0 auto}
+input,button{font-family:inherit;font-size:14px;padding:10px;border:1px solid #e8ddd8;border-radius:8px}
+button{cursor:pointer;background:#9b6a6d;color:#fff;border:none;padding:10px 20px}
+button:hover{opacity:.85}
+.b2{background:#fff;color:#4a3838;border:1px solid #e8ddd8}
+.b3{background:#c97070}
+.pi{background:#fff;padding:16px;border-radius:8px;margin-bottom:8px;cursor:pointer;border:1px solid #e8ddd8;display:flex;justify-content:space-between;align-items:center}
+.pi:hover{border-color:#9b6a6d}
+.bg{font-size:11px;padding:2px 8px;border-radius:20px}
+.be{background:#e8f5e9;color:#2e7d32}
+.bo{background:#f5f0ed;color:#8a7878}
+.tb{margin:10px 0;display:flex;gap:4px;flex-wrap:wrap}
+.tb button{padding:6px 12px;font-size:13px}
+#ed{background:#fff;min-height:500px;padding:20px;border:1px solid #e8ddd8;border-radius:8px;outline:none}
+#ed:focus{border-color:#9b6a6d}
+.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin:10px 0}
+.it{cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;aspect-ratio:1}
+.it:hover{border-color:#9b6a6d}
+.it img{width:100%;height:100%;object-fit:cover}
+.md{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:999}
+.md.show{display:flex}
+.mb{background:#fff;border-radius:10px;padding:20px;width:600px;max-width:90vw;max-height:80vh;overflow-y:auto}
+.ul{border:2px dashed #e8ddd8;border-radius:8px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px}
+.ul input{display:none}
+.ts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4a3838;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none}
+.ts.show{opacity:1}
+</style>
 </head>
 <body>
-
-<div id="login-screen">
-  <div class="login-card">
-    <h1>Naia CMS</h1>
-    <p>Upri se da bi mogla da menjaš sadržaj sajta.</p>
-    <input type="password" id="password-input" placeholder="Lozinka" autocomplete="current-password">
-    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Upri se</button>
-    <div class="error-msg" id="login-error"></div>
-  </div>
+<div id="login" class="c" style="max-width:360px;margin-top:15vh">
+<h1 style="color:#9b6a6d;margin-bottom:8px">Naia CMS</h1>
+<p style="color:#8a7878;margin-bottom:20px;font-size:14px">Upri se da menjas sadrzaj sajta.</p>
+<input type="password" id="pw" placeholder="Lozinka" style="width:100%;margin-bottom:12px">
+<button style="width:100%" onclick="login()">Upri se</button>
+<div id="le" style="color:#c97070;font-size:14px;margin-top:8px"></div>
 </div>
-
 <div id="app" style="display:none">
-  <div id="list-view">
-    <div class="header">
-      <h1>Naia CMS</h1>
-      <div>
-        <a href="/" target="_blank" class="btn btn-secondary btn-sm">Otvori sajt</a>
-        <button class="btn btn-secondary btn-sm" onclick="doLogout()">Odjava</button>
-      </div>
-    </div>
-    <div class="container">
-      <div style="font-size:18px;margin-bottom:20px">Izaberi stranicu za uređivanje:</div>
-      <div id="page-list"></div>
-    </div>
-  </div>
-
-  <div id="editor-view" style="display:none">
-    <div class="editor-header">
-      <div id="editor-page-name">-</div>
-      <div>
-        <button class="btn btn-secondary btn-sm" onclick="showImageModal()">Slika</button>
-        <button class="btn btn-danger btn-sm" onclick="resetPage()">Vrati na original</button>
-        <button class="btn btn-secondary btn-sm" onclick="backToList()">Nazad</button>
-        <button class="btn btn-primary btn-sm" onclick="savePage()" id="save-btn">Sacuvaj</button>
-      </div>
-    </div>
-    <div class="toolbar">
-      <button class="tool-btn" onclick="execCmd('bold')"><b>B</b></button>
-      <button class="tool-btn" onclick="execCmd('italic')"><i>I</i></button>
-      <button class="tool-btn" onclick="execCmd('underline')"><u>U</u></button>
-      <button class="tool-btn" onclick="execCmd('formatBlock','H1')">H1</button>
-      <button class="tool-btn" onclick="execCmd('formatBlock','H2')">H2</button>
-      <button class="tool-btn" onclick="execCmd('formatBlock','H3')">H3</button>
-      <button class="tool-btn" onclick="execCmd('formatBlock','P')">P</button>
-      <button class="tool-btn" onclick="insertLink()">Link</button>
-      <button class="tool-btn" onclick="showImageModal()">Slika</button>
-      <button class="tool-btn" onclick="execCmd('insertUnorderedList')">Lista</button>
-      <button class="tool-btn" onclick="execCmd('insertOrderedList')">1. Lista</button>
-      <button class="tool-btn" onclick="execCmd('justifyLeft')">&lt;</button>
-      <button class="tool-btn" onclick="execCmd('justifyCenter')">-</button>
-      <button class="tool-btn" onclick="execCmd('justifyRight')">&gt;</button>
-      <button class="tool-btn" onclick="execCmd('undo')">Undo</button>
-      <button class="tool-btn" onclick="execCmd('redo')">Redo</button>
-    </div>
-    <div class="editor-frame-wrapper">
-      <iframe id="editor-iframe"></iframe>
-    </div>
-  </div>
+<div style="background:#fff;border-bottom:1px solid #e8ddd8;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto 20px">
+<b style="color:#9b6a6d">Naia CMS</b>
+<div>
+<a href="/" target="_blank"><button class="b2" style="font-size:13px;padding:6px 14px">Otvori sajt</button></a>
+<button class="b2" style="font-size:13px;padding:6px 14px" onclick="logout()">Odjava</button>
 </div>
-
-<div class="modal-overlay" id="image-modal">
-  <div class="modal">
-    <h2>Slike</h2>
-    <div class="upload-area" onclick="document.getElementById('upload-input').click()">
-      <p style="color:var(--text-light);font-size:14px">Klikni da ucitas novu sliku</p>
-      <input type="file" id="upload-input" accept="image/*" onchange="uploadImage(event)">
-    </div>
-    <div id="image-grid" class="image-grid"></div>
-    <div style="text-align:right;margin-top:16px">
-      <button class="btn btn-secondary btn-sm" onclick="closeImageModal()">Zatvori</button>
-    </div>
-  </div>
 </div>
-
-<div class="toast" id="toast"></div>
-
+<div class="c">
+<div style="font-size:16px;margin-bottom:16px">Izaberi stranicu:</div>
+<div id="pages"></div>
+</div>
+</div>
+<div id="editor" style="display:none">
+<div style="background:#fff;border-bottom:1px solid #e8ddd8;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;max-width:900px;margin:0 auto">
+<div id="ename"></div>
+<div>
+<button class="b2" style="font-size:13px;padding:6px 14px" onclick="showImg()">Slika</button>
+<button class="b3" style="font-size:13px;padding:6px 14px" onclick="resetPg()">Vrati na original</button>
+<button class="b2" style="font-size:13px;padding:6px 14px" onclick="back()">Nazad</button>
+<button style="font-size:13px;padding:6px 14px" onclick="save()" id="sb">Sacuvaj</button>
+</div>
+</div>
+<div class="tb" style="max-width:900px;margin:0 auto">
+<button class="b2" onclick="fmt('bold')"><b>B</b></button>
+<button class="b2" onclick="fmt('italic')"><i>I</i></button>
+<button class="b2" onclick="fmt('underline')"><u>U</u></button>
+<button class="b2" onclick="fmt('formatBlock','H1')">H1</button>
+<button class="b2" onclick="fmt('formatBlock','H2')">H2</button>
+<button class="b2" onclick="fmt('formatBlock','H3')">H3</button>
+<button class="b2" onclick="fmt('formatBlock','P')">P</button>
+<button class="b2" onclick="addLink()">Link</button>
+<button class="b2" onclick="showImg()">Slika</button>
+<button class="b2" onclick="fmt('insertUnorderedList')">Lista</button>
+<button class="b2" onclick="fmt('undo')">Undo</button>
+<button class="b2" onclick="fmt('redo')">Redo</button>
+</div>
+<div style="padding:20px;max-width:900px;margin:0 auto">
+<div id="ed" contenteditable="true"></div>
+</div>
+</div>
+<div class="md" id="imgmd">
+<div class="mb">
+<h2 style="color:#9b6a6d;margin-bottom:12px">Slike</h2>
+<div class="ul" onclick="document.getElementById('uf').click()">
+<p style="color:#8a7878;font-size:14px">Klikni da ucitas novu sliku</p>
+<input type="file" id="uf" accept="image/*" onchange="upImg(event)">
+</div>
+<div id="ig" class="ig"></div>
+<div style="text-align:right"><button class="b2" onclick="closeImg()">Zatvori</button></div>
+</div>
+</div>
+<div class="ts" id="toast"></div>
 <script>
-  let currentPage = null;
-  let currentPageName = null;
-
-  document.addEventListener('DOMContentLoaded', checkAuth);
-  document.getElementById('password-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-  });
-
-  async function checkAuth() {
-    try {
-      const res = await fetch('/api/verify', { credentials: 'include' });
-      const data = await res.json();
-      if (data.authed) showApp();
-    } catch (e) {}
-  }
-
-  async function doLogin() {
-    const password = document.getElementById('password-input').value;
-    const errorEl = document.getElementById('login-error');
-    errorEl.textContent = '';
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ password: password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showApp();
-      } else {
-        errorEl.textContent = data.error || 'Greska';
-      }
-    } catch (e) {
-      errorEl.textContent = 'Greska pri povezivanju';
-    }
-  }
-
-  function doLogout() {
-    document.cookie = 'naia_auth=; Path=/; Max-Age=0';
-    location.reload();
-  }
-
-  function showApp() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    loadPageList();
-  }
-
-  async function loadPageList() {
-    const listEl = document.getElementById('page-list');
-    listEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    try {
-      const res = await fetch('/api/pages', { credentials: 'include' });
-      const data = await res.json();
-      listEl.innerHTML = data.pages.map(function(p) {
-        return '<div class="page-card" onclick=\"openEditor(\\'' + p.path + '\\', \\'' + p.name + '\\')\">' +
-          '<div><div class=\"page-card-name\">' + p.name + '</div>' +
-          '<div class=\"page-card-path\">' + p.path + '</div></div>' +
-          '<div class=\"page-badge ' + (p.edited ? 'badge-edited' : 'badge-original') + '\">' +
-          (p.edited ? 'Izmenjeno' : 'Original') + '</div></div>';
-      }).join('');
-n    } catch (e) {
-n      listEl.innerHTML = '<div class=\"error-msg\">Greska pri ucitavanju stranica.</div>';
-n    }
-n  }
-
-  async function openEditor(path, name) {
-n    currentPage = path;
-n    currentPageName = name;
-n    document.getElementById('list-view').style.display = 'none';
-n    document.getElementById('editor-view').style.display = 'block';
-n    document.getElementById('editor-page-name').textContent = name;
-n    const iframe = document.getElementById('editor-iframe');
-n    iframe.src = path;
-n    iframe.onload = function() {
-n      try {
-n        const doc = iframe.contentDocument;
-n        doc.body.contentEditable = 'true';
-n        doc.body.style.outline = 'none';
-n        doc.addEventListener('click', function(e) {
-n          const a = e.target.closest('a');
-n          if (a) e.preventDefault();
-n        });
-n        doc.addEventListener('submit', function(e) { e.preventDefault(); });
-n      } catch (e) { console.error(e); }
-n    };
-n  }
-
-  function backToList() {
-n    document.getElementById('editor-view').style.display = 'none';
-n    document.getElementById('list-view').style.display = 'block';
-n    document.getElementById('editor-iframe').src = '';
-n    loadPageList();
-n  }
-
-  function execCmd(cmd, value) {
-n    const iframe = document.getElementById('editor-iframe');
-n    try {
-n      iframe.contentDocument.body.focus();
-n      iframe.contentDocument.execCommand(cmd, false, value || null);
-n    } catch (e) {}
-n  }
-
-  function insertLink() {
-n    const url = prompt('Unesi URL linka:');
-n    if (url) execCmd('createLink', url);
-n  }
-
-  async function savePage() {
-n    const btn = document.getElementById('save-btn');
-n    const iframe = document.getElementById('editor-iframe');
-n    btn.disabled = true;
-n    btn.textContent = 'Cuvanje...';
-n    try {
-n      const html = iframe.contentDocument.documentElement.outerHTML;
-n      const res = await fetch('/api/page', {
-n        method: 'PUT',\n        headers: { 'Content-Type': 'application/json' },\n        credentials: 'include',\n        body: JSON.stringify({ path: currentPage, html: html }),
-n      });
-n      const data = await res.json();
-n      if (res.ok) {
-n        showToast('Sacuvano!', 'success');
-n      } else {
-n        showToast(data.error || 'Greska pri cuvanju', 'error');
-n      }
-n    } catch (e) {
-n      showToast('Greska pri cuvanju', 'error');
-n    }
-n    btn.disabled = false;
-n    btn.textContent = 'Sacuvaj';\n  }
-
-  async function resetPage() {
-n    if (!confirm('Sigurno zelis da vratis na original?')) return;\n    try {\n      await fetch('/api/page?path=' + encodeURIComponent(currentPage), {\n        method: 'DELETE',\n        credentials: 'include',\n      });\n      showToast('Vraceno na original', 'success');\n      backToList();\n    } catch (e) {\n      showToast('Greska', 'error');\n    }\n  }
-
-  function showImageModal() {
-n    document.getElementById('image-modal').classList.add('show');\n    loadImages();\n  }
-
-  function closeImageModal() {
-n    document.getElementById('image-modal').classList.remove('show');\n  }
-
-  async function loadImages() {
-n    const grid = document.getElementById('image-grid');\n    grid.innerHTML = '<div class=\"loading\"><div class=\"spinner\"></div></div>';\n    try {\n      const res = await fetch('/api/images', { credentials: 'include' });\n      const data = await res.json();\n      if (data.images.length === 0) {\n        grid.innerHTML = '<p style=\"color:var(--text-light);font-size:14px;text-align:center\">Nema ucitanih slika.</p>';\n        return;\n      }\n      grid.innerHTML = data.images.map(function(img) {\n        return '<div class=\"image-thumb\">' +\n          '<img src=\"' + img.url + '\" loading=\"lazy\" onclick=\"insertImage(\\'' + img.url + '\\')\">' +\n          '<button class=\"delete-btn\" onclick=\"deleteImage(\\'' + img.key + '\\', event)\">x</button></div>';\n      }).join('');\n    } catch (e) {\n      grid.innerHTML = '<p style=\"color:var(--danger)\">Greska pri ucitavanju slika.</p>';\n    }\n  }
-
-  async function uploadImage(event) {
-n    const file = event.target.files[0];\n    if (!file) return;\n    const grid = document.getElementById('image-grid');\n    grid.innerHTML = '<div class=\"loading\"><div class=\"spinner\"></div></div>';\n    const formData = new FormData();\n    formData.append('file', file);\n    try {\n      const res = await fetch('/api/upload', {\n        method: 'POST',\n        credentials: 'include',\n        body: formData,\n      });\n      const data = await res.json();\n      if (res.ok) {\n        showToast('Slika ucitana', 'success');\n        loadImages();\n      } else {\n        showToast(data.error || 'Greska', 'error');\n        loadImages();\n      }\n    } catch (e) {\n      showToast('Greska pri ucitavanju', 'error');\n      loadImages();\n    }\n  }
-
-  function insertImage(url) {
-n    execCmd('insertImage', url);\n    closeImageModal();\n    showToast('Slika ubacena', 'success');\n  }
-
-  async function deleteImage(key, event) {
-n    event.stopPropagation();\n    if (!confirm('Obrisati sliku?')) return;\n    try {\n      await fetch('/api/delete-image', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        credentials: 'include',\n        body: JSON.stringify({ key: key }),\n      });\n      loadImages();\n      showToast('Slika obrisana', 'success');\n    } catch (e) {\n      showToast('Greska', 'error');\n    }\n  }
-
-  let toastTimer;
-  function showToast(msg, type) {
-n    const toast = document.getElementById('toast');\n    toast.textContent = msg;\n    toast.className = 'toast show ' + (type || '');\n    clearTimeout(toastTimer);\n    toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 3000);\n  }
+var cp='',ph='';
+document.addEventListener('DOMContentLoaded',checkAuth);
+document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+async function checkAuth(){try{var r=await fetch('/api/verify',{credentials:'include'});var d=await r.json();if(d.authed)showApp();}catch(e){}}
+async function login(){var p=document.getElementById('pw').value;var e=document.getElementById('le');e.textContent='';try{var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({password:p})});var d=await r.json();if(r.ok)showApp();else e.textContent=d.error||'Greska';}catch(ex){e.textContent='Greska';}}
+function logout(){document.cookie='naia_auth=;Path=/;Max-Age=0';location.reload();}
+function showApp(){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';loadPages();}
+async function loadPages(){var el=document.getElementById('pages');el.innerHTML='Ucitavanje...';try{var r=await fetch('/api/pages',{credentials:'include'});var d=await r.json();el.innerHTML=d.pages.map(function(p){return '<div class="pi" onclick="edit(\''+p.path+'\',\''+p.name+'\')"><div>'+p.name+'<br><small style="color:#8a7878">'+p.path+'</small></div><span class="bg '+(p.edited?'be':'bo')+'">'+(p.edited?'Izmenjeno':'Original')+'</span></div>';}).join('');}catch(e){el.innerHTML='Greska';}}
+async function edit(path,name){cp=path;document.getElementById('app').style.display='none';document.getElementById('editor').style.display='block';document.getElementById('ename').textContent=name;var ed=document.getElementById('ed');ed.innerHTML='Ucitavanje...';try{var r=await fetch('/api/page?path='+encodeURIComponent(path),{credentials:'include'});var d=await r.json();var doc=new DOMParser().parseFromString(d.html,'text/html');ph=doc.head.innerHTML;ed.innerHTML=doc.body.innerHTML;}catch(e){ed.innerHTML='Greska';}}
+function back(){document.getElementById('editor').style.display='none';document.getElementById('app').style.display='block';loadPages();}
+function fmt(c,v){document.getElementById('ed').focus();document.execCommand(c,false,v||null);}
+function addLink(){var u=prompt('Unesi URL:');if(u)fmt('createLink',u);}
+async function save(){var b=document.getElementById('sb');b.textContent='Cuvanje...';try{var body=document.getElementById('ed').innerHTML;var html='<!DOCTYPE html><html lang="sr"><head>'+ph+'</head><body>'+body+'</body></html>';var r=await fetch('/api/page',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({path:cp,html:html})});var d=await r.json();if(r.ok)toast('Sacuvano!');else toast(d.error||'Greska');}catch(e){toast('Greska');}b.textContent='Sacuvaj';}
+async function resetPg(){if(!confirm('Vrati na original?'))return;try{await fetch('/api/page?path='+encodeURIComponent(cp),{method:'DELETE',credentials:'include'});toast('Vraceno');back();}catch(e){toast('Greska');}}
+function showImg(){document.getElementById('imgmd').classList.add('show');loadImgs();}
+function closeImg(){document.getElementById('imgmd').classList.remove('show');}
+async function loadImgs(){var g=document.getElementById('ig');g.innerHTML='Ucitavanje...';try{var r=await fetch('/api/images',{credentials:'include'});var d=await r.json();if(d.images.length===0){g.innerHTML='Nema slika.';return;}g.innerHTML=d.images.map(function(img){return '<div class="it"><img src="'+img.url+'" loading="lazy" onclick="insImg(\''+img.url+'\')"></div>';}).join('');}catch(e){g.innerHTML='Greska';}}
+async function upImg(ev){var f=ev.target.files[0];if(!f)return;var g=document.getElementById('ig');g.innerHTML='Ucitavanje...';var fd=new FormData();fd.append('file',f);try{var r=await fetch('/api/upload',{method:'POST',credentials:'include',body:fd});var d=await r.json();if(r.ok){toast('Ucitano');loadImgs();}else{toast(d.error||'Greska');loadImgs();}}catch(e){toast('Greska');loadImgs();}}
+function insImg(u){fmt('insertImage',u);closeImg();toast('Ubaceno');}
+var tt;function toast(m){var e=document.getElementById('toast');e.textContent=m;e.className='ts show';clearTimeout(tt);tt=setTimeout(function(){e.className='ts';},3000);}
 </script>
-
 </body>
 </html>
