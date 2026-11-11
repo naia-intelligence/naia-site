@@ -1,0 +1,7 @@
+.git
+.wrangler
+wrangler.toml
+.assetsignore
+node_modules
+worker.js
+admin/config.yml
