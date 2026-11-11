@@ -229,7 +229,7 @@ async function handleListImages(request, env, cors) {
   const images = listed.objects.map(obj => ({
     key: obj.key,
     url: `/${obj.key}`,
-n    size: obj.size,
+    size: obj.size,
     uploaded: obj.uploaded ? obj.uploaded.toISOString() : null,
   }));
   return jsonResponse({ images }, 200, cors);
@@ -247,7 +247,7 @@ async function handleDeleteImage(request, env, cors) {
 }
 
 async function serveR2Image(path, env) {
-  const key = path.replace(/^\\//, '');
+  const key = path.replace(/^\//, '');
   const object = await env.MEDIA.get(key);
   if (!object) return new Response('Not found', { status: 404 });
 
