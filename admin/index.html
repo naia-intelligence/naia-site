@@ -1,23 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="sr">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NAIA Admin</title>
+  <title>Naia CMS</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --primary: #9b6a6d; --bg: #faf6f3; --surface: #fff; --text: #4a3838; --text-light: #8a7878; --border: #e8ddd8; --success: #6b9e6b; --danger: #c97070; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-card { background: var(--surface); padding: 40px; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); width: 360px; max-width: 90vw; }
+    .login-card h1 { font-size: 24px; margin-bottom: 8px; color: var(--primary); }
+    .login-card p { color: var(--text-light); margin-bottom: 24px; font-size: 14px; }
+    input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; margin-bottom: 12px; }
+    input:focus { border-color: var(--primary); }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; }
+    .btn:hover { opacity: 0.88; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 20px; color: var(--primary); }
+n    .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+    .page-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .page-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-color: var(--primary); }
+    .page-card-name { font-weight: 500; }
+    .page-card-path { font-size: 13px; color: var(--text-light); }
+    .page-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+    .badge-edited { background: #e8f5e9; color: #2e7d32; }
+    .badge-original { background: #f5f0ed; color: #8a7878; }
+    .editor-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .toolbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 4px; flex-wrap: wrap; }
+    .tool-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; font-size: 14px; }
+    .tool-btn:hover { background: var(--bg); }
+    .editor-frame-wrapper { width: 100%; height: calc(100vh - 160px); overflow: hidden; }
+n    #editor-iframe { width: 100%; height: 100%; border: none; background: white; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 999; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--surface); border-radius: 10px; padding: 24px; width: 600px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
+    .image-thumb { position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
+    .image-thumb:hover { border-color: var(--primary); }
+    .image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .image-thumb .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(201,112,112,0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 14px; }
+    .upload-area { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 16px; }
+n    .upload-area input { display: none; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
+    .loading { text-align: center; padding: 40px; color: var(--text-light); }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <script src="https://unpkg.com/netlify-identity-widget@latest/dist/netlify-identity-widget.js"></script>
-  <script src="https://unpkg.com/decap-cms@latest/dist/decap-cms.js"></script>
-  <script>
-    if (window.netlifyIdentity) {
-      window.netlifyIdentity.on("init", user => {
-        if (!user) {
-          window.netlifyIdentity.on("login", () => {
-            document.location.href = "/admin/";
-          });
-        }
-      });
-    }
-  </script>
-</body>
-</html>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🌿 Naia CMS</h1>
+    <p>Upri se da bi mogla da menjaš sadržaj sajta.</p>
+    <input type="password" id="password-input" placeholder="Lozinka" autocomplete="current-password">
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Upri se</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div id="list-view">
+    <div class="header">
+      <h1>🌿 Naia CMS</h1>
+      <div>
+n        <a href="/" target="_blank" class="btn btn-secondary btn-sm">Otvori sajt ↗</a>
+        <button class="btn btn-secondary btn-sm" onclick="doLogout()">Odjava</button>
+      </div>
+    </div>
+    <div class="container">
+n      <div style="font-size:18px;margin-bottom:20px">Izaberi stranicu za uređivanje:</div>
+      <div id="page-list"></div>
+    </div>
+  </div>
+
+  <div id="editor-view">
+    <div class="editor-header">
+      <div id="editor-page-name">—</div>
+      <div>
+        <button class="btn btn-secondary btn-sm" onclick="showImageModal()">📷 Slika</button>
+        <button class="btn btn-danger btn-sm" onclick="resetPage()">↺ Vrati na original</button>
+        <button class="btn btn-secondary btn-sm" onclick="backToList()">← Nazad</button>
+        <button class="btn btn-primary btn-sm" onclick="savePage()" id="save-btn">Sačuvaj ✓</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="tool-btn" onclick="execCmd('bold')"><b>B</b></button>
+      <button class="tool-btn" onclick="execCmd('italic')"><i>I</i></button>
+      <button class="tool-btn" onclick="execCmd('underline')"><u>U</u></button>
+      <button class="tool-btn" onclick="execCmd('formatBlock','H1')">H1</button>
+      <button class="tool-btn" onclick="execCmd('formatBlock','H2')">H2</button>
+      <button class="tool-btn" onclick="execCmd('formatBlock','H3')">H3</button>
+n      <button class="tool-btn" onclick="execCmd('formatBlock','P')">P</button>
+      <button class="tool-btn" onclick="insertLink()">🔗 Link</button>
+      <button class="tool-btn" onclick="showImageModal()">📷 Slika</button>
+      <button class="tool-btn" onclick="execCmd('insertUnorderedList')">• Lista</button>
+      <button class="tool-btn" onclick="execCmd('insertOrderedList')">1. Lista</button>
+      <button class="tool-btn" onclick="execCmd('justifyLeft')">⬅</button>
+      <button class="tool-btn" onclick="execCmd('justifyCenter')">⬌</button>
+      <button class="tool-btn" onclick="execCmd('justifyRight')">➡</button>
+      <button class="tool-btn" onclick="execCmd('undo')">↶</button>
+      <button class="tool-btn" onclick="execCmd('redo')">↷</button>
+    </div>
+    <div class="editor-frame-wrapper">
+n      <iframe id="editor-iframe"></iframe>
+n    </div>
+n  </div>
+</div>
+
+<div class="modal-overlay" id="image-modal">
+  <div class="modal">
+    <h2>📷 Slike</h2>
+    <div class="upload-area" onclick="document.getElementById('upload-input').click()">
+      <p style="color:var(--text-light);font-size:14px">📁 Klikni da učitaš novu sliku</p>
+n      <input type="file" id="upload-input" accept="image/*" onchange="uploadImage(event)">
+n    </div>
+n    <div id="image-grid" class="image-grid"></div>
+n    <div style="text-align:right;margin-top:16px">
+n      <button class="btn btn-secondary btn-sm" onclick="closeImageModal()">Zatvori</button>
+n    </div>
+n  </div>
+n</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentPage = null, currentPageName = null;
+n  const PAGES = [
+n    { path: '/', name: 'Početna' },
+n    { path: '/o-nama/', name: 'O nama' },
+n    { path: '/program/', name: 'Program' },
+n    { path: '/contact/', name: 'Kontakt' },
+n    { path: '/ritualni-vodic-28-dana-povratka-sebi/', name: 'Ritualni vodič' },
+n  ];
+
+  document.addEventListener('DOMContentLoaded', checkAuth);
+  document.getElementById('password-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  async function checkAuth() {
+n    try {
+n      const res = await fetch('/api/verify', { credentials: 'include' });
+n      const data = await res.json();
+n      if (data.authed) showApp();
+n    } catch {}
+n  }
+
+  async function doLogin() {
+n    const password = document.getElementById('password-input').value;
+n    const errorEl = document.getElementById('login-error');
+n    errorEl.textContent = '';
+n    try {
+n      const res = await fetch('/api/login', {
+n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        credentials: 'include',\n        body: JSON.stringify({ password }),\n      });
+n      const data = await res.json();\n      if (res.ok) showApp(); else errorEl.textContent = data.error || 'Greška';\n    } catch { errorEl.textContent = 'Greška pri povezivanju'; }\n  }
+
+  function doLogout() {
+n    document.cookie = 'naia_auth=; Path=/; Max-Age=0';\n    location.reload();\n  }
+
+  function showApp() {
+n    document.getElementById('login-screen').style.display = 'none';\n    document.getElementById('app').style.display = 'block';\n    loadPageList();\n  }
+
+  async function loadPageList() {
+n    const listEl = document.getElementById('page-list');\n    listEl.innerHTML = '<div class=\"loading\"><div class=\"spinner\"></div></div>';\n    try {\n      const res = await fetch('/api/pages', { credentials: 'include' });\n      const data = await res.json();\n      listEl.innerHTML = data.pages.map(p => `\n        <div class=\"page-card\" onclick=\"openEditor('${p.path}', '${p.name}')\">\n          <div>\n            <div class=\"page-card-name\">${p.name}</div>\n            <div class=\"page-card-path\">${p.path}</div>\n          </div>\n          <div class=\"page-badge ${p.edited ? 'badge-edited' : 'badge-original'}\">${p.edited ? '✓ Izmenjeno' : 'Original'}</div>\n        </div>\n      `).join('');\n    } catch { listEl.innerHTML = '<div class=\"error-msg\">Greška pri učitavanju stranica.</div>'; }\n  }
+
+  async function openEditor(path, name) {
+n    currentPage = path; currentPageName = name;\n    document.getElementById('list-view').style.display = 'none';\n    document.getElementById('editor-view').style.display = 'block';\n    document.getElementById('editor-page-name').textContent = name;\n    const iframe = document.getElementById('editor-iframe');\n    iframe.src = path;\n    iframe.onload = () => {\n      try {\n        const doc = iframe.contentDocument;\n        doc.body.contentEditable = 'true';\n        doc.body.style.outline = 'none';\n        doc.addEventListener('click', e => { const a = e.target.closest('a'); if (a) e.preventDefault(); });\n        doc.addEventListener('submit', e => e.preventDefault());\n      } catch (e) { console.error(e); }\n    };\n  }
+
+  function backToList() {
+n    document.getElementById('editor-view').style.display = 'none';\n    document.getElementById('list-view').style.display = 'block';\n
