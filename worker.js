@@ -1,258 +1,170 @@
 const PAGES = [
-  { path: '/', name: 'Početna' },
+  { path: '/', name: 'Pocetna' },
   { path: '/o-nama/', name: 'O nama' },
   { path: '/program/', name: 'Program' },
   { path: '/contact/', name: 'Kontakt' },
-  { path: '/ritualni-vodic-28-dana-povratka-sebi/', name: 'Ritualni vodič' },
+  { path: '/ritualni-vodic-28-dana-povratka-sebi/', name: 'Ritualni vodic' },
 ];
 
-function jsonResponse(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...extraHeaders },
-  });
+function json(data, status, extra) {
+  const h = { 'Content-Type': 'application/json' };
+  if (extra) Object.assign(h, extra);
+  return new Response(JSON.stringify(data), { status: status || 200, headers: h });
 }
 
-function normalizePath(path) {
+function norm(path) {
   if (!path || path === '/') return '/';
   let p = path.startsWith('/') ? path : '/' + path;
   if (!p.endsWith('/') && !p.includes('.')) p += '/';
   return p;
 }
 
-async function hmacSign(data, key) {
+function toAssetPath(path) {
+  if (path === '/') return '/index.html';
+  if (path.endsWith('/')) return path + 'index.html';
+  return path;
+}
+
+async function sign(data, key) {
   const enc = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', enc.encode(key),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(data));
-  return btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const ck = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const s = await crypto.subtle.sign('HMAC', ck, enc.encode(data));
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function createToken(password) {
-  const payload = btoa(JSON.stringify({ exp: Date.now() + 7 * 24 * 60 * 60 * 1000 }))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const sig = await hmacSign(payload, password);
-  return `${payload}.${sig}`;
+async function makeToken(pw) {
+  const payload = btoa(JSON.stringify({ exp: Date.now() + 604800000 })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return payload + '.' + await sign(payload, pw);
 }
 
-async function verifyToken(token, password) {
-  if (!token || !password) return false;
-  const [payload, sig] = token.split('.');
-  if (!payload || !sig) return false;
-  const expected = await hmacSign(payload, password);
-  if (sig !== expected) return false;
-  try {
-    const data = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return data.exp > Date.now();
-  } catch {
-    return false;
-  }
+async function checkToken(token, pw) {
+  if (!token || !pw) return false;
+  const parts = token.split('.');
+  if (!parts[0] || !parts[1]) return false;
+  if (parts[1] !== await sign(parts[0], pw)) return false;
+  try { return JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'))).exp > Date.now(); } catch { return false; }
 }
 
-function getToken(request) {
-  const cookie = request.headers.get('Cookie') || '';
-  const match = cookie.match(/naia_auth=([^;]+)/);
-  return match ? match[1] : null;
+function getCookie(req) {
+  const m = (req.headers.get('Cookie') || '').match(/naia_auth=([^;]+)/);
+  return m ? m[1] : null;
 }
 
-async function isAuthed(request, env) {
-  return verifyToken(getToken(request), env.ADMIN_PASSWORD);
+async function auth(req, env) {
+  return checkToken(getCookie(req), env.ADMIN_PASSWORD);
 }
 
 export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
+  async fetch(req, env) {
+    const url = new URL(req.url);
     const path = url.pathname;
 
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': url.origin,
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      });
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': url.origin, 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Credentials': 'true' } });
     }
 
-    const cors = {
-      'Access-Control-Allow-Origin': url.origin,
-      'Access-Control-Allow-Credentials': 'true',
-    };
+    const cors = { 'Access-Control-Allow-Origin': url.origin, 'Access-Control-Allow-Credentials': 'true' };
 
-    if (path === '/api/login' && request.method === 'POST')
-      return handleLogin(request, env, cors);
+    try {
+      if (path === '/api/login' && req.method === 'POST') {
+        const body = await req.json();
+        if (!env.ADMIN_PASSWORD) return json({ error: 'ADMIN_PASSWORD nije postavljen.' }, 500, cors);
+        if (body.password !== env.ADMIN_PASSWORD) return json({ error: 'Pogresna lozinka' }, 401, cors);
+        const token = await makeToken(env.ADMIN_PASSWORD);
+        return json({ success: true }, 200, Object.assign({}, cors, { 'Set-Cookie': 'naia_auth=' + token + '; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800' }));
+      }
 
-    if (path === '/api/verify' && request.method === 'GET')
-      return handleVerify(request, env, cors);
+      if (path === '/api/verify' && req.method === 'GET') {
+        return json({ authed: await auth(req, env) }, 200, cors);
+      }
 
-    if (path === '/api/pages' && request.method === 'GET')
-      return handleListPages(request, env, cors);
+      if (path === '/api/pages' && req.method === 'GET') {
+        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        const pages = [];
+        for (const p of PAGES) {
+          const kv = await env.CONTENT.get('page:' + p.path);
+          pages.push({ path: p.path, name: p.name, edited: !!kv });
+        }
+        return json({ pages }, 200, cors);
+      }
 
-    if (path === '/api/page')
-      return handlePage(request, env, cors, url);
+      if (path === '/api/page') {
+        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
 
-    if (path === '/api/upload' && request.method === 'POST')
-      return handleUpload(request, env, cors);
+        if (req.method === 'GET') {
+          const p = url.searchParams.get('path');
+          if (!p) return json({ error: 'No path' }, 400, cors);
+          const n = norm(p);
+          const kv = await env.CONTENT.get('page:' + n);
+          if (kv) return json({ html: kv, source: 'kv' }, 200, cors);
+          const assetRes = await env.ASSETS.fetch(new Request(new URL(toAssetPath(n), url.origin).toString()));
+          if (assetRes.ok) return json({ html: await assetRes.text(), source: 'assets' }, 200, cors);
+          return json({ error: 'Stranica nije pronadjena' }, 404, cors);
+        }
 
-    if (path === '/api/images' && request.method === 'GET')
-      return handleListImages(request, env, cors);
+        if (req.method === 'PUT') {
+          const body = await req.json();
+          if (!body.path || !body.html) return json({ error: 'Fali path ili html' }, 400, cors);
+          await env.CONTENT.put('page:' + norm(body.path), body.html);
+          return json({ success: true }, 200, cors);
+        }
 
-    if (path === '/api/delete-image' && request.method === 'POST')
-      return handleDeleteImage(request, env, cors);
+        if (req.method === 'DELETE') {
+          const p = url.searchParams.get('path');
+          if (!p) return json({ error: 'No path' }, 400, cors);
+          await env.CONTENT.delete('page:' + norm(p));
+          return json({ success: true }, 200, cors);
+        }
+      }
 
-    if (path.startsWith('/images/'))
-      return serveR2Image(path, env);
+      if (path === '/api/upload' && req.method === 'POST') {
+        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        const form = await req.formData();
+        const file = form.get('file');
+        if (!file) return json({ error: 'Nema fajla' }, 400, cors);
+        const key = 'images/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+        await env.MEDIA.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+        return json({ url: '/' + key, key }, 200, cors);
+      }
 
-    if (path.startsWith('/admin') || path.includes('.'))
-      return env.ASSETS.fetch(request);
+      if (path === '/api/images' && req.method === 'GET') {
+        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        const listed = await env.MEDIA.list({ prefix: 'images/' });
+        const images = listed.objects.map(o => ({ key: o.key, url: '/' + o.key, size: o.size, uploaded: o.uploaded ? o.uploaded.toISOString() : null }));
+        return json({ images }, 200, cors);
+      }
 
-    const normalized = normalizePath(path);
-    const kvContent = await env.CONTENT.get(`page:${normalized}`);
-    if (kvContent) {
-      return new Response(kvContent, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
+      if (path === '/api/delete-image' && req.method === 'POST') {
+        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        const body = await req.json();
+        if (!body.key) return json({ error: 'No key' }, 400, cors);
+        await env.MEDIA.delete(body.key);
+        return json({ success: true }, 200, cors);
+      }
+
+      if (path.startsWith('/images/')) {
+        const obj = await env.MEDIA.get(path.replace(/^\\//, ''));
+        if (!obj) return new Response('Not found', { status: 404 });
+        const h = new Headers();
+        obj.writeHttpMetadata(h);
+        h.set('Cache-Control', 'public, max-age=31536000');
+        return new Response(obj.body, { headers: h });
+      }
+
+      if (path === '/admin' || path === '/admin/') {
+        const html = await env.ASSETS.fetch(new Request(new URL('/admin/index.html', url.origin).toString()));
+        return new Response(await html.text(), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      }
+
+      if (path.includes('.')) return env.ASSETS.fetch(req);
+
+      const n = norm(path);
+      const kv = await env.CONTENT.get('page:' + n);
+      if (kv) return new Response(kv, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return env.ASSETS.fetch(new Request(new URL(toAssetPath(n), url.origin).toString()));
+
+    } catch (err) {
+      return json({ error: err.message, stack: err.stack }, 500, cors);
     }
-
-    return env.ASSETS.fetch(request);
-  },
+  }
 };
-
-async function handleLogin(request, env, cors) {
-  if (!env.ADMIN_PASSWORD) {
-    return jsonResponse({
-      error: 'ADMIN_PASSWORD nije postavljen.'
-    }, 500, cors);
-  }
-  const body = await request.json();
-  if (body.password !== env.ADMIN_PASSWORD) {
-    return jsonResponse({ error: 'Pogrešna lozinka' }, 401, cors);
-  }
-  const token = await createToken(env.ADMIN_PASSWORD);
-  return jsonResponse({ success: true }, 200, {
-    ...cors,
-    'Set-Cookie': `naia_auth=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`,
-  });
-}
-
-async function handleVerify(request, env, cors) {
-  const authed = await isAuthed(request, env);
-  return jsonResponse({ authed }, 200, cors);
-}
-
-async function handleListPages(request, env, cors) {
-  if (!await isAuthed(request, env))
-    return jsonResponse({ error: 'Unauthorized' }, 401, cors);
-
-  const pages = [];
-  for (const page of PAGES) {
-    const kv = await env.CONTENT.get(`page:${page.path}`);
-    pages.push({ ...page, edited: !!kv });
-  }
-  return jsonResponse({ pages }, 200, cors);
-}
-
-async function handlePage(request, env, cors, url) {
-  if (!await isAuthed(request, env))
-    return jsonResponse({ error: 'Unauthorized' }, 401, cors);
-
-  if (request.method === 'GET') {
-    const path = url.searchParams.get('path');
-    const original = url.searchParams.get('original') === 'true';
-    if (!path) return jsonResponse({ error: 'No path' }, 400, cors);
-
-    const normalized = normalizePath(path);
-
-    if (!original) {
-      const kv = await env.CONTENT.get(`page:${normalized}`);
-      if (kv) return jsonResponse({ html: kv, source: 'kv' }, 200, cors);
-    }
-
-    const assetUrl = new URL(normalized, url.origin);
-    const assetRes = await env.ASSETS.fetch(new Request(assetUrl.toString()));
-    if (assetRes.ok) {
-      const html = await assetRes.text();
-      return jsonResponse({ html, source: 'assets' }, 200, cors);
-    }
-    return jsonResponse({ error: 'Stranica nije pronađena' }, 404, cors);
-  }
-
-  if (request.method === 'PUT') {
-    const body = await request.json();
-    if (!body.path || !body.html)
-      return jsonResponse({ error: 'Fali path ili html' }, 400, cors);
-
-    const normalized = normalizePath(body.path);
-    await env.CONTENT.put(`page:${normalized}`, body.html);
-    return jsonResponse({ success: true }, 200, cors);
-  }
-
-  if (request.method === 'DELETE') {
-    const path = url.searchParams.get('path');
-    if (!path) return jsonResponse({ error: 'No path' }, 400, cors);
-
-    const normalized = normalizePath(path);
-    await env.CONTENT.delete(`page:${normalized}`);
-    return jsonResponse({ success: true }, 200, cors);
-  }
-
-  return jsonResponse({ error: 'Method not allowed' }, 405, cors);
-}
-
-async function handleUpload(request, env, cors) {
-  if (!await isAuthed(request, env))
-    return jsonResponse({ error: 'Unauthorized' }, 401, cors);
-
-  const formData = await request.formData();
-  const file = formData.get('file');
-  if (!file) return jsonResponse({ error: 'Nema fajla' }, 400, cors);
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-  const key = `images/${Date.now()}-${safeName}`;
-
-  await env.MEDIA.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type },
-  });
-
-  return jsonResponse({ url: `/${key}`, key }, 200, cors);
-}
-
-async function handleListImages(request, env, cors) {
-  if (!await isAuthed(request, env))
-    return jsonResponse({ error: 'Unauthorized' }, 401, cors);
-
-  const listed = await env.MEDIA.list({ prefix: 'images/' });
-  const images = listed.objects.map(obj => ({
-    key: obj.key,
-    url: `/${obj.key}`,
-    size: obj.size,
-    uploaded: obj.uploaded ? obj.uploaded.toISOString() : null,
-  }));
-  return jsonResponse({ images }, 200, cors);
-}
-
-async function handleDeleteImage(request, env, cors) {
-  if (!await isAuthed(request, env))
-    return jsonResponse({ error: 'Unauthorized' }, 401, cors);
-
-  const body = await request.json();
-  if (!body.key) return jsonResponse({ error: 'No key' }, 400, cors);
-
-  await env.MEDIA.delete(body.key);
-  return jsonResponse({ success: true }, 200, cors);
-}
-
-async function serveR2Image(path, env) {
-  const key = path.replace(/^\//, '');
-  const object = await env.MEDIA.get(key);
-  if (!object) return new Response('Not found', { status: 404 });
-
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set('Cache-Control', 'public, max-age=31536000');
-  return new Response(object.body, { headers });
-}
