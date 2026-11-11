@@ -1,6 +1,5 @@
 backend:
-  name: github
-  repo: naia-intelligence/naia-site
+  name: git-gateway
   branch: main
 media_folder: "assets"
 public_folder: "/assets"
