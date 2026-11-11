@@ -1,0 +1,35 @@
+backend:
+  name: github
+  repo: naia-intelligence/naia-site
+  branch: main
+media_folder: "assets"
+public_folder: "/assets"
+collections:
+  - name: "pages"
+    label: "Stranice"
+    files:
+      - label: "Početna strana"
+        name: "index"
+        file: "index.html"
+        fields:
+          - {label: "Sadržaj", name: "body", widget: "markdown"}
+      - label: "Program"
+        name: "program"
+        file: "program/index.html"
+        fields:
+          - {label: "Sadržaj", name: "body", widget: "markdown"}
+      - label: "Ritualni vodič"
+        name: "product"
+        file: "ritualni-vodic-28-dana-povratka-sebi/index.html"
+        fields:
+          - {label: "Sadržaj", name: "body", widget: "markdown"}
+      - label: "Kontakt"
+        name: "contact"
+        file: "contact/index.html"
+        fields:
+          - {label: "Sadržaj", name: "body", widget: "markdown"}
+      - label: "O nama"
+        name: "about"
+        file: "o-nama/index.html"
+        fields:
+          - {label: "Sadržaj", name: "body", widget: "markdown"}
