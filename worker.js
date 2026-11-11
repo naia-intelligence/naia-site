@@ -19,21 +19,25 @@ function norm(path) {
   return p;
 }
 
-function toAssetPath(path) {
+function assetPath(path) {
   if (path === '/') return '/index.html';
   if (path.endsWith('/')) return path + 'index.html';
   return path;
+}
+
+function noSlash(path) {
+  return path.startsWith('/') ? path.slice(1) : path;
 }
 
 async function sign(data, key) {
   const enc = new TextEncoder();
   const ck = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const s = await crypto.subtle.sign('HMAC', ck, enc.encode(data));
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 async function makeToken(pw) {
-  const payload = btoa(JSON.stringify({ exp: Date.now() + 604800000 })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const payload = btoa(JSON.stringify({ exp: Date.now() + 604800000 })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   return payload + '.' + await sign(payload, pw);
 }
 
@@ -50,7 +54,7 @@ function getCookie(req) {
   return m ? m[1] : null;
 }
 
-async function auth(req, env) {
+async function isAuth(req, env) {
   return checkToken(getCookie(req), env.ADMIN_PASSWORD);
 }
 
@@ -75,11 +79,11 @@ export default {
       }
 
       if (path === '/api/verify' && req.method === 'GET') {
-        return json({ authed: await auth(req, env) }, 200, cors);
+        return json({ authed: await isAuth(req, env) }, 200, cors);
       }
 
       if (path === '/api/pages' && req.method === 'GET') {
-        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        if (!await isAuth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
         const pages = [];
         for (const p of PAGES) {
           const kv = await env.CONTENT.get('page:' + p.path);
@@ -89,7 +93,7 @@ export default {
       }
 
       if (path === '/api/page') {
-        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        if (!await isAuth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
 
         if (req.method === 'GET') {
           const p = url.searchParams.get('path');
@@ -97,7 +101,7 @@ export default {
           const n = norm(p);
           const kv = await env.CONTENT.get('page:' + n);
           if (kv) return json({ html: kv, source: 'kv' }, 200, cors);
-          const assetRes = await env.ASSETS.fetch(new Request(new URL(toAssetPath(n), url.origin).toString()));
+          const assetRes = await env.ASSETS.fetch(new Request(new URL(assetPath(n), url.origin).toString()));
           if (assetRes.ok) return json({ html: await assetRes.text(), source: 'assets' }, 200, cors);
           return json({ error: 'Stranica nije pronadjena' }, 404, cors);
         }
@@ -118,7 +122,7 @@ export default {
       }
 
       if (path === '/api/upload' && req.method === 'POST') {
-        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        if (!await isAuth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
         const form = await req.formData();
         const file = form.get('file');
         if (!file) return json({ error: 'Nema fajla' }, 400, cors);
@@ -128,14 +132,14 @@ export default {
       }
 
       if (path === '/api/images' && req.method === 'GET') {
-        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        if (!await isAuth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
         const listed = await env.MEDIA.list({ prefix: 'images/' });
         const images = listed.objects.map(o => ({ key: o.key, url: '/' + o.key, size: o.size, uploaded: o.uploaded ? o.uploaded.toISOString() : null }));
         return json({ images }, 200, cors);
       }
 
       if (path === '/api/delete-image' && req.method === 'POST') {
-        if (!await auth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
+        if (!await isAuth(req, env)) return json({ error: 'Unauthorized' }, 401, cors);
         const body = await req.json();
         if (!body.key) return json({ error: 'No key' }, 400, cors);
         await env.MEDIA.delete(body.key);
@@ -143,7 +147,7 @@ export default {
       }
 
       if (path.startsWith('/images/')) {
-        const obj = await env.MEDIA.get(path.replace(/^\\//, ''));
+        const obj = await env.MEDIA.get(noSlash(path));
         if (!obj) return new Response('Not found', { status: 404 });
         const h = new Headers();
         obj.writeHttpMetadata(h);
@@ -161,7 +165,7 @@ export default {
       const n = norm(path);
       const kv = await env.CONTENT.get('page:' + n);
       if (kv) return new Response(kv, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-      return env.ASSETS.fetch(new Request(new URL(toAssetPath(n), url.origin).toString()));
+      return env.ASSETS.fetch(new Request(new URL(assetPath(n), url.origin).toString()));
 
     } catch (err) {
       return json({ error: err.message, stack: err.stack }, 500, cors);
