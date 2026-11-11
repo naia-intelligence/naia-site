@@ -1,5 +1,16 @@
-name = "naia-site"
+name = "naia-website"
 compatibility_date = "2024-09-23"
+main = "worker.js"
+
+workers_dev = false
+preview_urls = false
 
 [assets]
-directory = "./"
+directory = "."
+
+[[kv_namespaces]]
+binding = "CONTENT"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "naia-assets"
